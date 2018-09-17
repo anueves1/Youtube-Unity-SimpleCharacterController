@@ -6,14 +6,10 @@ Process:
 	Delete the camera that comes with the scene. The name is "MainCamera"
 	Place some random cubes around the scene.
 	Create a new capsule and call it player, then position it at (0, 1, 0)
+	Delete the capsule collider from it and add a Character Controller component.
 	Create a camera and parent it to the player object, then make its position (0, 0.8, 0)
 	Now make a prefabs folder and drag the player object inside it.
 	
-	Now create a new folder inside the assets folder and call it "Scripts" and inside of it, 
-	create two new scripts: "CharacterMotor" and "CameraHandler"
-	
-	Add the "CharacterMotor" script to the Player object and the "CameraHandler" script to the camera under it.
-	
-	Follow the youtube tutorial that comes along with this project to know how to write these two scripts.
+	Follow the youtube tutorial that comes along with this project to know how to write the scripts included.
 	
 	Enjoy.
