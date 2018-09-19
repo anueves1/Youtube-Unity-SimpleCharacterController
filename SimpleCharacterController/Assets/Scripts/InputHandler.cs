@@ -9,6 +9,7 @@ public class InputHandler : MonoBehaviour
     public float MouseY { get; private set; }
 
     public bool Running { get; private set; }
+    public bool Jump { get; private set; }
 
     private void Update()
     {
@@ -24,5 +25,8 @@ public class InputHandler : MonoBehaviour
 
         //Get the running state.
         Running = Input.GetKey(KeyCode.LeftShift);
+
+        //Get the jump input.
+        Jump = Input.GetKeyDown(KeyCode.Space);
     }
 }

@@ -3,10 +3,10 @@
 public class CameraHandler : MonoBehaviour
 {
     [SerializeField]
-    private Vector2 m_Sensivity;
+    private Vector2 m_Sensivity = Vector2.one;
 
     [SerializeField]
-    private Vector2 m_YClamp;
+    private Vector2 m_YClamp = new Vector2(-80, 80);
 
     private float m_MouseX;
     private float m_MouseY;

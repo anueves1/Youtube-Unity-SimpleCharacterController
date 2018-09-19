@@ -3,7 +3,21 @@
 public class CharacterMotor : MonoBehaviour
 {
     [SerializeField]
-    private float m_Speed = 2;
+    private float m_Speed = 0.1f;
+
+    [SerializeField]
+    private float m_RunMultiplier = 2;
+
+    [Header("Jump")]
+    [Space(5f)]
+
+    [SerializeField]
+    private float m_JumpForce = 2;
+
+    [SerializeField]
+    private float m_Gravity = 2;
+
+    private Vector3 m_MoveDir;
 
     private InputHandler m_Input;
     private CharacterController m_CharacterController;
@@ -24,16 +38,40 @@ public class CharacterMotor : MonoBehaviour
 
         //Get the vector that would move the character vertically.
         var vertical = m_Input.Vertical * transform.forward;
-        
-        //Get the movement vector.
-        var moveDir = horizontal + vertical;
-        //Normalize the movement vector.
-        moveDir.Normalize();
 
-        //Add the speed to the movement vector.
-        moveDir *= m_Speed;
+        //If we're on the ground.
+        if (m_CharacterController.isGrounded)
+        {
+            //Get the movement vector.
+            m_MoveDir = horizontal + vertical;
+            //Normalize the movement vector.
+            m_MoveDir.Normalize();
+
+            //Add the speed to the movement vector.
+            m_MoveDir *= GetSpeed();
+
+            //If we are trying to jump, call the jump function.
+            if (m_Input.Jump)
+            {
+                //Add the jump force.
+                m_MoveDir.y = m_JumpForce;
+            }
+        }
+        //If we're not grounded, apply gravity.
+        else
+            m_MoveDir.y += Vector3.down.y * m_Gravity;
 
         //Move in that direction.
-        m_CharacterController.Move(moveDir);
+        m_CharacterController.Move(m_MoveDir);
+    }
+
+    private float GetSpeed()
+    {
+        var speed = m_Speed;
+
+        //Add the running speed if needed.
+        speed *= m_Input.Running ? 2f : 1f;
+
+        return speed;
     }
 }
