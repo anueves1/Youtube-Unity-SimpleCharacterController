@@ -192,6 +192,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Sensivity: {x: 1, y: 1}
   m_YClamp: {x: -80, y: 80}
+  m_TPOffset: {x: -1, y: 2, z: -2}
+  m_TransitionSpeed: 2
+  m_CanTransitionToTP: 1
 --- !u!143 &143048006545347088
 CharacterController:
   m_ObjectHideFlags: 1

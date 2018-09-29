@@ -4,16 +4,34 @@ namespace Part1
 {
     public class CameraHandler : MonoBehaviour
     {
+        [Header("First Person")]
+        [Space(5f)]
+
         [SerializeField]
         private Vector2 m_Sensivity = Vector2.one;
 
         [SerializeField]
         private Vector2 m_YClamp = new Vector2(-80, 80);
 
+        [Header("Third Person")]
+        [Space(5f)]
+
+        [SerializeField]
+        private Vector3 m_TPOffset;
+
+        [SerializeField]
+        private float m_TransitionSpeed = 2;
+
+        [SerializeField]
+        private bool m_CanTransitionToTP = true;
+
         private float m_MouseX;
         private float m_MouseY;
 
+        private Vector3 m_FPOffset;
         private InputHandler m_Input;
+
+        private bool m_IsFirstPerson = true;
 
         private void Start()
         {
@@ -25,6 +43,22 @@ namespace Part1
 
             //Lock the cursor.
             Cursor.lockState = CursorLockMode.Locked;
+
+            //Position where the camera is when we are in first person.
+            m_FPOffset = transform.localPosition;
+        }
+
+        private void Update()
+        {
+            //If we want to change our view and we can, toggle it.
+            if (m_Input.ToggleView && m_CanTransitionToTP)
+                m_IsFirstPerson = !m_IsFirstPerson;
+
+            //Get the position where the camera should be at.
+            var nPosition = m_IsFirstPerson ? m_FPOffset : m_TPOffset;
+
+            //Lerp the camera's position to the needed one.
+            transform.localPosition = Vector3.Lerp(transform.localPosition, nPosition, Time.deltaTime * m_TransitionSpeed);
         }
 
         private void LateUpdate()

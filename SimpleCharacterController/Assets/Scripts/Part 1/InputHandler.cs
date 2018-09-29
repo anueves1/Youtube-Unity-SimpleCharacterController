@@ -12,6 +12,7 @@ namespace Part1
 
         public bool Running { get; private set; }
         public bool Jump { get; private set; }
+        public bool ToggleView { get; private set; }
 
         private void Update()
         {
@@ -30,6 +31,9 @@ namespace Part1
 
             //Get the jump input.
             Jump = Input.GetKeyDown(KeyCode.Space);
+
+            //Get the view toggle input.
+            ToggleView = Input.GetKeyDown(KeyCode.Tab);
         }
     }
 }
