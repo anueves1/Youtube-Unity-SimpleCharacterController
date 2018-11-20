@@ -8,25 +8,28 @@ namespace Finished
         private float sensitivity = 1f;
 
         [SerializeField]
+        private float smoothValue = 1f;
+
+        [SerializeField]
         private Vector2 mouseYClamp = new Vector2(-80, 80);
 
         [Header("Crouching")]
         [Space(5f)]
 
         [SerializeField]
-        private float crouchOffset = 0.5f;
-
-        [SerializeField]
-        private Lerper crouchLerp;
+        private float crouchOffset = 0.8f;
 
         [Header("Third Person")]
         [Space(5f)]
 
         [SerializeField]
-        private Vector3 thirdPersonOffset;
+        private Vector3 tpPosition = new Vector3(0, 0, -4);
 
         [SerializeField]
-        private Lerper thirdPersonLerp;
+        private Lerper viewLerp;
+
+        [SerializeField]
+        private Transform body;
 
         private float mouseX;
         private float mouseY;
@@ -34,8 +37,7 @@ namespace Finished
         private InputManager input;
         private Vector3 normalPosition;
 
-        private bool wasCrouching;
-        private bool crouchTransition;
+        private bool inViewTransition;
 
         private void Awake()
         {
@@ -51,52 +53,41 @@ namespace Finished
             normalPosition = transform.localPosition;
         }
 
-        private void HandleCrouching()
+        public void OnViewChange()
         {
-            //If we just toggled the crouch.
-            if (input.IsCrouched != wasCrouching)
-            {
-                //We start the transition.
-                crouchTransition = true;
+            //Reset the lerper.
+            viewLerp.Reset();
 
-                //Reset the lerp.
-                crouchLerp.Reset();
-            }
-
-            //Assign the crouching value for this frame.
-            wasCrouching = input.IsCrouched;
-
-            //If we need to transition.
-            if (crouchTransition)
-            {
-                //Update the easing.
-                crouchLerp.Update(Time.deltaTime);
-
-                //Stop the transition if it's done.
-                if (crouchLerp.IsDone(true))
-                    crouchTransition = false;
-
-                //Get the correct value to transition to.
-                var gPosition = wasCrouching ? normalPosition - (Vector3.up * crouchOffset) : normalPosition;
-
-                //Lerp to that value.
-                transform.localPosition = Vector3.Lerp(transform.localPosition, gPosition, crouchLerp.InterpolatedValue);
-            }
+            //We start the view transition.
+            inViewTransition = true;
         }
 
         private void Update()
         {
-            HandleCrouching();
+            //Go back if we're not transitioning the view.
+            if (inViewTransition == false)
+                return;
 
-            //If we need to change our view. 
-            if(input.ThirdPerson)
+            //Update the lerp.
+            viewLerp.Update(Time.deltaTime);
+
+            //If we're done with the lerp.
+            if (viewLerp.IsDone(true))
             {
-                //Update the lerp.
-                thirdPersonLerp.Update(Time.deltaTime);
+                //Stop transtioning.
+                inViewTransition = false;
 
-                //Lerp the position.
-                transform.localPosition = Vector3.Lerp(transform.localPosition, thirdPersonOffset, thirdPersonLerp.InterpolatedValue);
+                return;
             }
+
+            //Calculate the position the camera should be at when in first person. (Based on crouch state)
+            Vector3 nPosition = input.IsCrouched ? normalPosition - (Vector3.up * crouchOffset) : normalPosition;
+
+            //Goal position for the camera.
+            Vector3 goalPosition = input.ThirdPerson ? tpPosition : nPosition;
+
+            //Lerp the position.
+            transform.localPosition = Vector3.Lerp(transform.localPosition, goalPosition, viewLerp.InterpolatedValue);
         }
 
         private void LateUpdate()
@@ -109,15 +100,30 @@ namespace Finished
             //Clamp the rotation on the y axis.
             mouseY = ClampRotation(mouseY, mouseYClamp.x, mouseYClamp.y);
 
-            //Camera rotation quaternion.
-            var cameraRotation = Quaternion.Euler(mouseY, 0f, 0f);
-            //Player rotation quaternion.
-            var playerRotation = Quaternion.Euler(0f, mouseX, 0f);
+            Quaternion pivotRotation = Quaternion.identity;
+            Quaternion cameraRotation = transform.localRotation;
+
+            //If we're in third person.
+            if (input.ThirdPerson)
+            {
+                //Camera rotation quaternion for third person.
+                pivotRotation = Quaternion.Euler(mouseY, mouseX, 0f);
+
+                //Look at the pivot.
+                transform.LookAt(transform.parent.position);
+            }
+            else
+            {
+                //Pivot rotation quaternion for first person.
+                pivotRotation = Quaternion.Euler(0f, mouseX, 0f);
+                //Camera rotation quaternion for first person.
+                cameraRotation = Quaternion.Euler(mouseY, 0f, 0f);
+            }
 
             //Assign the camera's rotation.
-            transform.localRotation = cameraRotation;
-            //Assign the player's rotation.
-            transform.parent.localRotation = playerRotation;
+            transform.localRotation = Quaternion.Slerp(transform.localRotation, cameraRotation, Time.deltaTime * smoothValue);
+            //Assign the pivot's rotation.
+            transform.parent.localRotation = Quaternion.Slerp(transform.parent.localRotation, pivotRotation, Time.deltaTime * smoothValue);
         }
 
         private float ClampRotation(float angle, float min, float max)

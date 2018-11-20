@@ -11,17 +11,26 @@ namespace Finished
         [SerializeField]
         private float runMultiplier = 2;
 
+        [SerializeField]
+        private float crouchSpeedMultiplier = 1;
+
         [Header("Crouching")]
         [Space(5f)]
-
-        [SerializeField]
-        private float crouchSpeedMultiplier = 1f;
 
         [SerializeField]
         private Lerper crouchLerp;
 
         [SerializeField]
         private float crouchHeightMultiplier = 0.5f;
+
+        [Header("Uncrouching detection")]
+        [Space(5f)]
+
+        [SerializeField]
+        private float uncrouchDetectionSphereHeightMultiplier = 1.8f;
+
+        [SerializeField]
+        private LayerMask uncrouchDetectionMask;
 
         [Header("In air settings")]
         [Space(5f)]
@@ -41,16 +50,23 @@ namespace Finished
         [SerializeField]
         private float airAccelerationSpeed = 5;
 
+        [Header("Debugs")]
+        [Space(5f)]
+
+        [SerializeField]
+        private bool debugCrouchDetectionSphere;
+
         private Vector3 moveVector;
         private Vector3 currentVelocity;
 
         private InputManager input;
         private CharacterController controller;
 
-        private bool wasCrouching;
         private bool inTransition;
-
         private Vector2 normalControllerValues;
+
+        private Vector3 cameraNormalPosition;
+        private Transform mainCamera;
 
         private void Awake()
         {
@@ -58,6 +74,11 @@ namespace Finished
             input = GetComponent<InputManager>();
             //Get a reference to the controller component.
             controller = GetComponent<CharacterController>();
+
+            //Get the camera object's transform.
+            mainCamera = GetComponentInChildren<Camera>().transform;
+            //Save the camera's standing position.
+            cameraNormalPosition = mainCamera.localPosition;
 
             //Store the default standing values.
             normalControllerValues.x = controller.height;
@@ -67,30 +88,44 @@ namespace Finished
         private void UpdateMoveVector()
         {
             //Vector that moves the character along its x axis.
-            var rightVector = input.Horizontal * transform.right;
+            var rightVector = input.Horizontal * transform.GetChild(0).right;
             //Vector that moves the character along its z axis.
-            var forwardVector = input.Vertical * transform.forward;
+            var forwardVector = input.Vertical * transform.GetChild(0).forward;
 
             //Vector that moves the character.
             moveVector = rightVector + forwardVector;
             moveVector.Normalize();
         }
 
+        private void OnDrawGizmosSelected()
+        {
+            if(debugCrouchDetectionSphere)
+                Gizmos.DrawWireSphere(transform.position + Vector3.up * uncrouchDetectionSphereHeightMultiplier, controller.radius);
+        }
+
+        public bool CanUncrouch()
+        {
+            //Check if there are colliders over the controller.
+            Collider[] hitColliders = Physics.OverlapSphere(transform.position + Vector3.up * uncrouchDetectionSphereHeightMultiplier, controller.radius, uncrouchDetectionMask);
+
+            //If there's nothing on top of the player, we can uncrouch.
+            if (hitColliders.Length == 0)
+                return true;
+
+            return false;
+        }
+
+        public void OnToggleCrouch()
+        {
+            //We start the transition.
+            inTransition = true;
+
+            //Reset the lerp.
+            crouchLerp.Reset();
+        }
+
         private void Update()
         {
-            //If we just toggled the crouch.
-            if (input.IsCrouched != wasCrouching)
-            {
-                //We start the transition.
-                inTransition = true;
-
-                //Reset the lerp.
-                crouchLerp.Reset();
-            }
-
-            //Assign the crouching value for this frame.
-            wasCrouching = input.IsCrouched;
-
             //If we need to transition.
             if(inTransition)
             {
@@ -102,8 +137,8 @@ namespace Finished
                     inTransition = false;
 
                 //Get the correct values to transition to.
-                var gHeight = wasCrouching ? normalControllerValues.x * crouchHeightMultiplier : normalControllerValues.x;
-                var gCenter = wasCrouching ? normalControllerValues.y * crouchHeightMultiplier : normalControllerValues.y;
+                var gHeight = input.IsCrouched ? normalControllerValues.x * crouchHeightMultiplier : normalControllerValues.x;
+                var gCenter = input.IsCrouched ? normalControllerValues.y * crouchHeightMultiplier : normalControllerValues.y;
 
                 //Lerp to those values.
                 controller.height = Mathf.Lerp(controller.height, gHeight, crouchLerp.InterpolatedValue);

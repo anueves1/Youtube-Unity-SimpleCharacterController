@@ -8,22 +8,15 @@ public class Lerper
     [SerializeField]
     private float duration = 1f;
 
-    private float time;
-
     public void Reset()
     {
         InterpolatedValue = 0f;
-
-        time = 0f;
     }
 
-    public float Update(float deltaTime)
+    public void Update(float deltaTime)
     {
         //Clamp the time.
-        time = Mathf.Clamp01(time + (1f / duration) * deltaTime);
-        InterpolatedValue = time;
-
-        return InterpolatedValue;
+        InterpolatedValue = Mathf.Clamp01(InterpolatedValue + (1f / duration) * deltaTime);
     }
 
     public bool IsDone(bool reset = false)
